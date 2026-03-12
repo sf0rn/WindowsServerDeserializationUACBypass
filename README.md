@@ -13,6 +13,8 @@ In the `user.config` file (`C:\Users\test\AppData\Local\Microsoft_Corporation\Se
 
 **SystemManager version:** 10.0.26100.1591 (WinBuild.160101.0800)
 
+**User Account:** Administrator account with UAC set on default settings
+
 In the `Microsoft.Windows.ServerManager.Common.dll` -> `Microsoft.Windows.ServerManager.Common.Properties` -> `Settings` the class is responsible for working with the parameters from the configuration file.
 
 Parameters from classes with attributes set to `[SettingsSerializeAs(SettingsSerializeAs.Binary)]` can be used to bypass UAC:
