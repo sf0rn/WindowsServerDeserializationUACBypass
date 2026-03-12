@@ -1,0 +1,2 @@
+# WindowsServerDeserializationUACBypass
+Windows ServerUAC bypass using ServerManager.exe
